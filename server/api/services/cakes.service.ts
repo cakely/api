@@ -25,7 +25,7 @@ const cakes: Cake[] = [
     recipeUrl: 'https://www.allrecipes.com/search/results/?wt=bakewell&sort=re',
     photoUrl:
       'https://upload.wikimedia.org/wikipedia/commons/thumb/c/cf/Bakewell_tart_on_a_plate.jpg/480px-Bakewell_tart_on_a_plate.jpg',
-    rating: 4.0,
+    rating: 5.0,
   },
 ];
 
