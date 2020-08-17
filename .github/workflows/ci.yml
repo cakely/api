@@ -1,0 +1,74 @@
+on:
+  push:
+    branches:
+      - master
+    paths-ignore:
+      - .github/workflows/**
+  pull_request:
+    branches:
+    - master
+    types: [opened, reopened, synchronize]
+    paths-ignore:
+      - .github/workflows/**
+  workflow_dispatch:
+
+name: Continuous Integration
+
+env:
+  AWS_REGION: eu-west-1
+  ECR_REPOSITORY: cakely-registry
+
+jobs:
+  # Run app tests
+  test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+
+    - run: npm install
+
+    - run: npm run lint
+    
+    - run: npm run test
+      env:
+        APP_ID: api
+        PORT: 3000
+        LOG_LEVEL: debug
+        REQUEST_LIMIT: 100kb
+        SESSION_SECRET: mySecret
+        OPENAPI_SPEC: '/api/v1/spec:'
+        
+  # Build and push image to Elastic Container Registry
+  push:
+    needs: test
+    runs-on: ubuntu-latest
+    
+    # Upon merge to master branch
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    steps:
+      - uses: actions/checkout@v2
+
+      # Authenticate with AWS using temporary credentials (https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_temp.html)
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+        
+      - name: Log in to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Build, tag, and push image to Amazon ECR
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+        # 00000000000000.dkr.ecr.my-region.amazonaws.com/cakely-registry:823498longsha8382934
+        run: |
+          docker build -t ${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG} .
+          docker push ${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG}
+
+      - name: Log out of Amazon ECR
+        if: always()
+        run: docker logout ${{ steps.login-ecr.outputs.registry }}

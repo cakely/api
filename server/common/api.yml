@@ -1,0 +1,86 @@
+openapi: 3.0.1
+info:
+  title: api
+  description: Cakely API
+  version: 1.0.0
+servers:
+- url: /api/v1
+tags:
+- name: Cakes
+  description: API for cakes!
+- name: Specification
+  description: The swagger API specification
+paths:
+  /cakes:
+    get:
+      tags:
+      - Cakes
+      description: Fetch all cakes
+      responses:
+        200:
+          description: Returns all cakes
+          content: {}
+    post:
+      tags:
+      - Cakes
+      description: Create a new type of cake
+      requestBody:
+        description: type of cake
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CakeBody'
+        required: true
+      responses:
+        200:
+          description: Returns all cakes
+          content: {}
+  /cakes/{id}:
+    get:
+      tags:
+      - Cakes
+      parameters:
+      - name: id
+        in: path
+        description: The id of the cake to retrieve
+        required: true
+        schema:
+          type: integer
+      responses:
+        200:
+          description: Return the cake with the specified id
+          content: {}
+        404:
+          description: Cake not found
+          content: {}
+  /spec:
+    get:
+      tags:
+      - Specification
+      responses:
+        200:
+          description: Return the API specification
+          content: {}
+components:
+  schemas:
+    CakeBody:
+      title: cake
+      required:
+      - name
+      - recipeUrl
+      - photoUrl
+      - rating
+      type: object
+      properties:
+        name:
+          type: string
+          example: a_cake
+        recipeUrl:
+          type: string
+          example: http://a_url_to_a_recipe_of_a_cake.com
+        photoUrl:
+          type: string
+          example: http://a_url_to_a_photo_of_a_cake.com
+        rating:
+          type: string
+          example: 4
