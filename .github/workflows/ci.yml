@@ -21,7 +21,8 @@ env:
 jobs:
   # Run app tests
   test:
-    runs-on: ubuntu-latest
+    # "Any self hosted runner made available to me will work"
+    runs-on: self-hosted
     steps:
     - uses: actions/checkout@v2
 
@@ -41,19 +42,52 @@ jobs:
   # Build and push image to Elastic Container Registry
   push:
     needs: test
-    runs-on: ubuntu-latest
+    # "Only self hosted runners tagged ecr-push will work"
+    runs-on: [self-hosted, ecr-push]
     
     # Upon merge to master branch
     if: github.event_name == 'push' && github.ref == 'refs/heads/master'
     steps:
       - uses: actions/checkout@v2
 
+      # The env context is not pre-populated with the self hosted runner's environment variables
+      # https://help.github.com/en/actions/reference/context-and-expression-syntax-for-github-actions#env-context
+      - name: Add masks for environment variables
+        run: |
+          echo "::add-mask::$ROLE_ID"
+          echo "::add-mask::$SECRET_ID"
+          
+      - name: Set environment variables
+        run: |
+          echo "::set-env name=ROLE_ID::$ROLE_ID"
+          echo "::set-env name=SECRET_ID::$SECRET_ID"
+        
+      # Import secrets from Vault
+      - name: Import Secrets
+        uses: hashicorp/vault-action@v1.0.1
+        id: secrets
+        with:
+          url: 'http://localhost:8200'    # Address of running Vault instance
+          method: approle
+          roleId: ${{ env.ROLE_ID }}
+          secretId: ${{ env.SECRET_ID }}
+          exportEnv: false
+          # Alternative using IAM user (https://www.vaultproject.io/docs/secrets/aws#usage):
+          # secrets: |
+          #   /aws/creds/ecr-push access_key | AWS_ACCESS_KEY_ID ;
+          #   /aws/creds/ecr-push secret_key | AWS_SECRET_ACCESS_KEY
+          secrets: |
+              /aws/sts/ecr-push access_key | AWS_ACCESS_KEY_ID ;
+              /aws/sts/ecr-push secret_key | AWS_SECRET_ACCESS_KEY ;
+              /aws/sts/ecr-push security_token | AWS_SESSION_TOKEN
+
       # Authenticate with AWS using temporary credentials (https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_temp.html)
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-access-key-id: ${{ steps.secrets.outputs.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ steps.secrets.outputs.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ steps.secrets.outputs.AWS_SESSION_TOKEN }}
           aws-region: ${{ env.AWS_REGION }}
         
       - name: Log in to Amazon ECR
