@@ -9,7 +9,7 @@ A GitHub Actions workflow ([`ci.yaml`](.github/workflows/ci.yml)) is configured 
 
 ## Context
 
-This repo is the technical complement to a webinar entitled Secure GitOps Workflows with GitHub Actions and HashiCorp Vault, delivered on August 25<sup>th</sup> 2020, which can be viewed online [**here**](https://www.hashicorp.com/resources).
+This repo is the technical complement to a webinar entitled Secure GitOps Workflows with GitHub Actions and HashiCorp Vault, delivered on August 25<sup>th</sup> 2020, which can be viewed online [**here**](https://www.hashicorp.com/webinars/secure-gitops-workflows-with-github-actions-and-hashicorp-vault/).
 
 The work here represents the final state of the demos and workflows that were presented as a part of that webinar. It is recommended to view this repo in the context of that webinar.
 
